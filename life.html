@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html>
+	<title>Code Example: Phyllotaxis</title>
+	
+	
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/0.6.0/p5.js"></script>
+	<script type="text/javascript">
+
+		const WHITE 			= 255
+		const BLACK 			= 0
+		const RESOLUTION = 20 	
+		const WORLD_WIDTH = 400
+		const WORLD_HEIGHT = 400
+		const MAXCOL = (WORLD_WIDTH-(RESOLUTION*5)) / RESOLUTION
+		const MAXROW = (WORLD_HEIGHT-(RESOLUTION*5)) / RESOLUTION
+		const ALIVE = 1;
+		const DEAD = 0;
+		
+		var world = []
+		
+		function setup() {
+    
+ 			canvas = createCanvas(window.innerWidth, window.innerHeight)	
+		
+ 			ellipseMode(CENTER)
+ 			background(WHITE)
+ 			
+ 			for ( let i = 0 ; i< MAXCOL ; i++) {
+ 				let rows = []
+ 				for ( let j = 0 ; j <MAXROW ; j++){
+ 					let cellStatus = ( floor(random(1,100))>30? ALIVE : DEAD )
+ 					rows.push(cellStatus)
+ 				}
+ 				world.push(rows)
+ 			}
+			//console.table(world)
+		}
+
+
+		function draw() {
+			
+				
+			for ( let col = 0 ; col < MAXCOL ; col++) {
+				for ( let row = 0 ; row < MAXROW ; row++){
+					strokeWeight(1)
+					stroke(BLACK)
+					let cellStatus = world[col][row]
+					if ( cellStatus === ALIVE ){
+						fill(255,255,255)
+					} else {
+						fill(100,100,100)
+					}
+					rect(col*RESOLUTION,row*RESOLUTION,RESOLUTION, RESOLUTION)
+				}
+			}
+			
+			world = apply_life_rules( world )
+		}
+
+		function cloneWorld ( _W ) {
+			let newWorld = []
+			for ( let c = 0 ; c< MAXCOL ; c++) {
+ 				let newWorldRow = []
+ 				for ( let r = 0 ; r <MAXROW ; r++){
+ 					let cellStatus = _W[c][r]
+ 					newWorldRow.push(cellStatus)
+ 				}
+ 				newWorld.push(newWorldRow)
+ 			}
+			return (newWorld)
+		}
+		
+		function apply_life_rules ( _W ) {
+			
+			let newWorld = cloneWorld(_W)
+			
+			for ( let c = 1 ; c < _W.length-1 ; c++){
+				for ( let r = 1 ; r < _W[c].length-1 ; r++){
+					//We must apply the rules to the current world map and put the results in the new World map
+					let neighbors = 0
+					
+					for ( let i = -1 ; i < 2 ; i++){
+						for (let j = -1; i<2 ; j++){
+							neighbors += _W[c+i][r+j]
+						}
+					}
+					
+					switch (neighbors){
+						case 2: // lives on
+							newWolrd[c][r]= _W[c][r]
+							break
+						case 3: // lives on or rebirth
+							newWolrd[c][r]= ALIVE
+							break
+						default:
+							//overpopulation > 3 <0 or 1 underpopulation
+							newWolrd[c][r]= DEAD 
+					}
+				
+				}
+			}
+			//console.log('done')
+			return newWorld
+			
+		}
+		
+		
+
+	
+	</script>
+<body>
+
+</body>
+</html>
