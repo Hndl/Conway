@@ -5,57 +5,61 @@
 	
 	<script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/0.6.0/p5.js"></script>
 	<script type="text/javascript">
+	
 		const WHITE 			= 255
 		const BLACK 			= 0
-		const RESOLUTION = 20 	
-		const WORLD_WIDTH = 600
-		const WORLD_HEIGHT = 600
-		const MAXCOL = WORLD_WIDTH / RESOLUTION
-		const MAXROW = WORLD_HEIGHT / RESOLUTION
-		const ALIVE = 1;
-		const DEAD = 0;
+		const RESOLUTION 		= 10	
+		const GRID 				= true
+		const ALIVE 			= 1;
+		const DEAD 				= 0;
+		const RATIO 			= 50
+		const GLIDER_GUN 		= true
 		
+		var WORLD_WIDTH = 600
+		var WORLD_HEIGHT = 600
+		var MAXCOL = WORLD_WIDTH / RESOLUTION
+		var MAXROW = WORLD_HEIGHT / RESOLUTION
 		var world = []
+		
+		
 		
 		function setup() {
     
  			canvas = createCanvas(window.innerWidth, window.innerHeight)	
-		
+			WORLD_WIDTH = width - 50
+			WORLD_HEIGHT = height - 50
+			MAXCOL = floor(WORLD_WIDTH / RESOLUTION)
+			MAXROW = floor(WORLD_HEIGHT / RESOLUTION)
  			ellipseMode(CENTER)
  			background(WHITE)
  			
  			for ( let r = 0 ; r< MAXROW ; r++) {
  				let cols = []
  				for ( let c = 0 ; c <MAXCOL ; c++){
- 					let cellStatus = ( floor(random(1,100))>90? ALIVE : DEAD )
- 					//let cellStatus = `${c}x${r}`
- 					//let cellStatus = DEAD
+ 					
+ 					let cellStatus = GLIDER_GUN? DEAD : ( floor(random(1,100))>RATIO? ALIVE : DEAD )
+ 					
  					cols.push(cellStatus)
  				}
  				world.push(cols)
  			}
-			//console.table(world)
-
-			world[5][4] = ALIVE
-			world[5][5] = ALIVE
-			world[5][6] = ALIVE
-
-			world[4][3] = ALIVE
-			world[4][4] = ALIVE
-			world[4][5] = ALIVE
-			
-
-			//console.table(world)
-
-			frameRate(5)
+	
+			if (GLIDER_GUN){				
+				makeGlider(world, 0,0);								
+				makeGlider(world, 26,0);
+				makeGlider(world, 26,51);
+				makeGlider(world, 52,0);						
+			}
 		}
+		
 		function draw() {
 			
 				
 			for ( let row = 0 ; row < MAXROW ; row++) {
 				for ( let col = 0 ; col < MAXCOL ; col++){
 					strokeWeight(1)
-					stroke(BLACK)
+					
+					stroke(GRID?BLACK:WHITE)
 					let cellStatus = world[row][col]
 					if ( cellStatus === ALIVE ){
 						fill(0,0,0)
@@ -63,16 +67,13 @@
 						fill(255,255,255)
 					}
 					
-				
 					rect(col*RESOLUTION,row*RESOLUTION,RESOLUTION, RESOLUTION)
 				}
-
 			}
-			
+	
 			world = apply_life_rules( world )
-
-			//noLoop()
 		}
+		
 		function cloneWorld ( _W ) {
 			let newWorld = []
 			for ( let r = 0 ; r< MAXROW ; r++) {
@@ -90,59 +91,65 @@
 		
 		function apply_life_rules ( _W ) {
 			
-			//? should this be a clone of the old or an empty
 			let newWorld = cloneWorld(_W)
-
 			//console.log('processing new world')
 			
-
 			//TODO edge wrap NSEW
-			for ( let r = 1 ; r < _W.length-1 ; r++){
-				for ( let c = 1 ; c < _W[r].length-1 ; c++){
+			for ( let r = 0 ; r < _W.length ; r++){
+				for ( let c = 0 ; c < _W[r].length ; c++){
 					//We must apply the rules to the current world map and put the results in the new World map
 					let neighbors = 0
 					//console.log(`processing ${c} of ${_W.length} and ${r} of ${_W[c].length}`)
+				
+					//[NE][NC][NW]
+					//[CE][CC][CW]
+					//[SE][SC][SW]
+					if ( c > 0 )
+						neighbors += _W[r][c-1]    // C/E
+					else 
+						neighbors += _W[r][MAXCOL-1]    // C/E
 					
-
-
-					// TODO opt 
+					if ( c < (MAXCOL-1 ))
+						neighbors += _W[r][c+1]    // C/W
+					else 
+						neighbors += _W[r][0]    // C/E 
+						
 					
-					//neighbors += _W[r][c]    // C/C
-					neighbors += _W[r][c-1]    // C/E
-					neighbors += _W[r][c+1]    // C/W
+					if ( r > 0 )
+						neighbors += _W[r-1][c]    // N/C
+					else 
+						neighbors += _W[MAXROW-1][c]    // C/E	
 					
-					neighbors += _W[r-1][c]    // N/C
-					neighbors += _W[r-1][c-1]    // N/E
-					neighbors += _W[r-1][c+1]    // N/W
-
-					neighbors += _W[r+1][c]    // S/C
-					neighbors += _W[r+1][c-1]    // S/E
-					neighbors += _W[r+1][c+1]    // S/W
-
+					if ( r > 0 &&  c > 0)
+						neighbors += _W[r-1][c-1]    // N/E
+						
+					if ( r > 0 &&  c < (MAXCOL-1 ))
+						neighbors += _W[r-1][c+1]    // N/W
+					else
+						neighbors += _W[MAXROW-1][0]    // N/W	
 					
-					/*
-					 TODO - something wrong with this...
-					try{ 
-						for ( let i = -1 ; i < 2 ; i++){
-							for (let j = -1; i<2 ; j++){
-								let ci = c+i
-								let rj = r+j
-								neighbors += _W[ci][rj]
-							}
-						}
-					} catch (err ) {
-						console.log(err)
-					}*/
-
+					if ( r < (MAXROW-1) )
+						neighbors += _W[r+1][c]    // S/C
+					else
+						neighbors += _W[0][c]    // S/C
+					
+					if ( r < (MAXROW-1) && c > 0 )
+						neighbors += _W[r+1][c-1]    // S/E
+					else
+						neighbors += _W[0][MAXCOL-1]    // S/E
+						
+					if ( r < (MAXROW-1) && c < (MAXCOL-1 ) )			
+						neighbors += _W[r+1][c+1]    // S/W
+					else
+						neighbors += _W[0][0]    // S/W
+			
 					/*
 					Any live cell with fewer than two live neighbors dies, as if by underpopulation. 0,1
 					Any live cell with two or three live neighbors lives on to the next generation. 2, 3
 					Any live cell with more than three live neighbors dies, as if by overpopulation. >3 see default
 					Any dead cell with exactly three live neighbors becomes a live cell, as if by reproduction.
 					*/
-
 					let rule = ''
-
 					switch (neighbors){
 						case 0:
 						case 1:
@@ -156,20 +163,18 @@
 								newWorld[r][c] = ALIVE
 								rule = 'Alive: 2/3'
 							}
-
 							if (_W[r][c] === DEAD && neighbors === 3){
 								newWorld[r][c] = ALIVE 			
 								rule = 'Dead: 3'	
 							}
 							break;
-
 						default:
 							rule='def'
 							//overpopulation > 3 <0 or 1 underpopulation
 							newWorld[r][c]= DEAD 	
 					}
-
-					/*if ( neighbors > 0 ) {
+					/*
+					if ( neighbors > 0 ) {
 						console.log('----- New World Tick----- ')
 						console.log(`new world col:${c} row:${r} oldState:${_W[r][c]} neighbors:${neighbors} newState:${newWorld[r][c]} rule:${rule}`)
 						console.log('Old World')
@@ -177,7 +182,8 @@
 						console.log('New World')
 						console.table(newWorld)
 						console.log('=====================')
-					}*/
+					}
+					*/
 				}
 			}
 			//console.log('processing of new world complete')
@@ -185,7 +191,52 @@
 			
 		}
 		
-		
+		function makeGlider ( _grid, _yoff, _xoff) {
+			world[_yoff+6][_xoff+1] = ALIVE
+			world[_yoff+6][_xoff+2] = ALIVE
+			world[_yoff+7][_xoff+1] = ALIVE
+			world[_yoff+7][_xoff+2] = ALIVE
+			
+			
+			world[_yoff+4][_xoff+36] = ALIVE
+			world[_yoff+4][_xoff+35] = ALIVE
+			world[_yoff+5][_xoff+36] = ALIVE
+			world[_yoff+5][_xoff+35] = ALIVE
+			
+			
+			world[_yoff+3][_xoff+13] = ALIVE
+			world[_yoff+3][_xoff+14] = ALIVE
+			world[_yoff+4][_xoff+12] = ALIVE
+			world[_yoff+4][_xoff+16] = ALIVE
+			world[_yoff+5][_xoff+11] = ALIVE
+			world[_yoff+5][_xoff+17] = ALIVE
+			world[_yoff+6][_xoff+17] = ALIVE
+			world[_yoff+6][_xoff+11] = ALIVE
+			world[_yoff+6][_xoff+18] = ALIVE
+			world[_yoff+6][_xoff+15] = ALIVE
+			world[_yoff+7][_xoff+11] = ALIVE
+			world[_yoff+7][_xoff+17] = ALIVE
+			world[_yoff+8][_xoff+12] = ALIVE
+			world[_yoff+8][_xoff+16] = ALIVE
+			world[_yoff+9][_xoff+13] = ALIVE
+			world[_yoff+9][_xoff+14] = ALIVE
+			
+			
+			world[_yoff+3][_xoff+21] = ALIVE
+			world[_yoff+4][_xoff+21] = ALIVE
+			world[_yoff+5][_xoff+21] = ALIVE
+			world[_yoff+3][_xoff+22] = ALIVE
+			world[_yoff+4][_xoff+22] = ALIVE
+			world[_yoff+5][_xoff+22] = ALIVE
+			
+			world[_yoff+2][_xoff+23] = ALIVE
+			world[_yoff+6][_xoff+23] = ALIVE
+			
+			world[_yoff+1][_xoff+25] = ALIVE
+			world[_yoff+2][_xoff+25] = ALIVE
+			world[_yoff+6][_xoff+25] = ALIVE
+			world[_yoff+7][_xoff+25] = ALIVE
+		}
 	
 	</script>
 <body>
